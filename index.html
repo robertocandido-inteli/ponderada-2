@@ -11,7 +11,7 @@
 
 <header class="topbar">
   <img class="logo" src="assets/logo.svg" alt="Inteli">
-  <div class="deck-title"><b>Semáforo Inteligente</b> · calibração do LDR e histerese</div>
+  <div class="deck-title"><b>Semáforo Inteligente</b> · plano do RA, LEDs e modo noturno com histerese</div>
   <span class="spacer"></span>
 </header>
 
@@ -21,21 +21,55 @@
   <section class="hero">
     <p class="kicker">Atividade ponderada · lançada na Aula 05 (03/11), medição do LDR em sala na Aula 06 (13/11)</p>
     <h1>Atividade ponderada de Computação 2 - Semáforo com dois modos de operação</h1>
-    <p class="lead">O semáforo da sua via passa a operar em modo noturno automático, detectado por um sensor de luminosidade LDR. O que se avalia é <b>a decisão de a partir de qual leitura o modo noturno entra</b>, e a garantia de que o semáforo não fica alternando entre os dois modos quando a luz está perto desse limite.</p>
+    <p class="lead">Você começou a estagiar no Departamento de Engenharia de Trânsito e ficou responsável pelo semáforo de uma via do bairro Butantã. A missão tem duas partes: <b>o semáforo básico</b>, com três LEDs cumprindo o plano semafórico do seu RA, e <b>o modo noturno automático</b>, detectado por um sensor de luminosidade LDR. No modo noturno, o que se avalia é <b>a decisão de a partir de qual leitura ele entra e sai</b>, e a garantia de que o semáforo não fica alternando entre os dois modos quando a luz está perto desse limite.</p>
     <div class="meta">
-      <span class="pill on">Bancada · ESP32 e LDR do kit</span>
+      <span class="pill on">Bancada · ESP32, três LEDs e LDR do kit</span>
       <span class="pill warn">IA na etapa Consultar, sem pedir código</span>
-      <span class="pill">Peso 5 · entrega no repositório do grupo, ADR.md individual</span>
+      <span class="pill">Peso 5 · entrega no seu repositório pessoal do GitLab</span>
     </div>
     <nav class="toc" aria-label="Sumário">
-      <a href="#histerese">Histerese</a>
+      <a href="#missao">Missão</a>
       <a href="#plano">Plano do RA</a>
+      <a href="#histerese">Histerese</a>
       <a href="#circuito">Circuito</a>
       <a href="#codigo">Código de calibração</a>
       <a href="#barema">Barema</a>
       <a href="#relatorio">Relatório</a>
     </nav>
     <div class="note"><div>A atividade começa em sala porque depende de montagem física e de medição com o sensor. A interface online e a publicação dos dados saem desta ponderada e passam para o artefato da sprint 4.</div></div>
+  </section>
+
+  <!-- ============ MISSÃO ============ -->
+  <section id="missao" class="block">
+    <p class="kicker">Missão</p>
+    <h2>Um semáforo, dois modos de operação</h2>
+    <p>Cada estagiário recebeu uma via com um plano semafórico diferente, definido pelo último dígito do RA. Sua missão é implementar a lógica do semáforo em um protótipo físico, com modo noturno.</p>
+    <div class="cards">
+      <div class="card blue">
+        <span class="tag">PARTE 1 · SEMÁFORO BÁSICO</span>
+        <h3>Ciclo do plano do RA</h3>
+        <p>Três LEDs (vermelho, amarelo e verde) na protoboard, cada um com o seu resistor, acendendo na sequência e com os tempos do seu plano, repetindo continuamente. Você prevê a corrente em cada LED, confronta com o datasheet e mede o ciclo real com um cronômetro externo.</p>
+      </div>
+      <div class="card orange">
+        <span class="tag">PARTE 2 · MODO NOTURNO</span>
+        <h3>Amarelo intermitente, por LDR</h3>
+        <p>À noite, a luz amarela pisca, indicando ao motorista que ele deve atravessar com cuidado; assim o semáforo evita que o motorista fique parado em locais desertos. A entrada e a saída do modo noturno são decididas pela leitura do LDR, com histerese, para que o semáforo não fique alternando entre os modos perto do limiar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PLANO DO RA ============ -->
+  <section id="plano" class="block">
+    <p class="kicker">Semáforo</p>
+    <h2>Plano semafórico pelo último dígito do RA</h2>
+    <p>No modo diurno, o semáforo cumpre o ciclo vermelho, verde e amarelo com os tempos do seu plano, repetindo continuamente: vermelho de 5 s mais o último dígito do RA, verde de 3 s mais a metade do último dígito arredondada para baixo, amarelo de 2 s para todos. Exemplo do enunciado: RA terminado em 4 dá 9 s de vermelho, 5 s de verde e 2 s de amarelo.</p>
+    <div class="sim calc">
+      <div class="sim-head"><span class="sim-title">Calculadora do plano</span></div>
+      <div class="fields two">
+        <label>Último dígito do RA<input id="raDigito" type="number" min="0" max="9" step="1" value="4"></label>
+        <div class="out" id="outPlano">Plano do RA<b>9 s · 5 s · 2 s</b><span>vermelho, verde e amarelo · ciclo de 16 s</span></div>
+      </div>
+    </div>
   </section>
 
   <!-- ============ HISTERESE ============ -->
@@ -69,24 +103,34 @@
     </div>
   </section>
 
-  <!-- ============ PLANO DO RA ============ -->
-  <section id="plano" class="block">
-    <p class="kicker">Semáforo</p>
-    <h2>Plano semafórico pelo último dígito do RA</h2>
-    <p>As fases do semáforo continuam valendo no modo diurno, com os tempos do seu plano: vermelho de 5 s mais o último dígito do RA, verde de 3 s mais a metade do último dígito arredondada para baixo, amarelo de 2 s para todos. Exemplo do enunciado: RA terminado em 4 dá 9 s de vermelho, 5 s de verde e 2 s de amarelo.</p>
-    <div class="sim calc">
-      <div class="sim-head"><span class="sim-title">Calculadora do plano</span></div>
-      <div class="fields two">
-        <label>Último dígito do RA<input id="raDigito" type="number" min="0" max="9" step="1" value="4"></label>
-        <div class="out" id="outPlano">Plano do RA<b>9 s · 5 s · 2 s</b><span>vermelho, verde e amarelo · ciclo de 16 s</span></div>
-      </div>
-    </div>
-  </section>
-
   <!-- ============ CIRCUITO ============ -->
   <section id="circuito" class="block">
     <p class="kicker">Montagem</p>
-    <h2>LDR em divisor de tensão num pino do ADC1</h2>
+    <h2>Três LEDs com resistor e LDR em divisor de tensão</h2>
+
+    <h3>LEDs do semáforo</h3>
+    <div class="grid-2 even">
+      <div class="stack">
+        <ul class="bullets">
+          <li>Cada LED (vermelho, amarelo e verde) vai a um pino digital do ESP32, em série com o <b>seu próprio resistor</b>, e o catodo vai ao <b>GND</b>.</li>
+          <li>A corrente no LED é <span class="mono">I = (V<sub>alim</sub> − V<sub>f</sub>) / R</span>, em que V<sub>alim</sub> é a tensão do pino (3,3 V no ESP32) e V<sub>f</sub> é a tensão direta do LED, que muda com a cor. Pegue V<sub>f</sub> e a corrente máxima no <b>datasheet do LED que você está usando</b>.</li>
+          <li>Essa corrente vai para a tabela de previsão no Contextualizar e é confrontada com o datasheet no Confrontar.</li>
+        </ul>
+      </div>
+      <div class="sim calc">
+        <div class="sim-head"><span class="sim-title">Calculadora da corrente no LED</span><span class="hint">V<sub>f</sub> de exemplo; use o do datasheet</span></div>
+        <div class="fields two">
+          <label>Tensão de alimentação (V)<input id="ledV" type="number" min="0" step="0.1" value="3.3"></label>
+          <label>Resistor (Ω)<input id="ledR" type="number" min="1" step="1" value="220"></label>
+          <label>V<sub>f</sub> vermelho (V)<input id="ledVfR" type="number" min="0" step="0.1" value="2.0"></label>
+          <label>V<sub>f</sub> amarelo (V)<input id="ledVfA" type="number" min="0" step="0.1" value="2.1"></label>
+          <label>V<sub>f</sub> verde (V)<input id="ledVfG" type="number" min="0" step="0.1" value="2.2"></label>
+          <div class="out" id="outLed"></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>LDR em divisor de tensão num pino do ADC1</h3>
     <div class="grid-2 even">
       <div class="sim">
         <div class="sim-head"><span class="sim-title">Divisor de tensão com o LDR</span></div>
@@ -154,7 +198,6 @@ void loop() {
   <!-- ============ BAREMA ============ -->
   <section id="barema" class="block">
     <h2>Barema · 10 pontos</h2>
-    <p class="muted">Reescrita 5C do Prof. Ovidio. Cada item é avaliado como contempla, contempla parcialmente ou não contempla.</p>
     <div class="table-wrap">
       <table class="c5 barema">
         <thead><tr><th>Etapa</th><th>Pontos</th><th>O que é avaliado</th></tr></thead>
@@ -176,41 +219,55 @@ void loop() {
     <h2>Relatório</h2>
     <p>Faça as etapas na ordem: cada uma diz <b>o que fazer</b> e <b>o que fica registrado</b>. As respostas ficam salvas como rascunho neste navegador.</p>
     <ol class="flow">
-      <li><b>Antes de programar e de medir:</b> Contextualizar e Consultar.</li>
-      <li><b>Na bancada:</b> Confrontar (calibração nas três condições) e Construir (limiares e modo noturno).</li>
-      <li><b>Depois da montagem:</b> Comprovar (vídeo da transição) e o ADR individual.</li>
-      <li><b>Entrega no repositório do grupo:</b> código, <span class="mono">RELATORIO.md</span> com a tabela de calibração, <span class="mono">grafico-calibracao.png</span>, vídeo da transição no limiar e o <span class="mono">ADR.md</span> de cada integrante.</li>
+      <li><b>Antes de montar e de medir:</b> Contextualizar (tabela de previsão do semáforo e critério do modo noturno) e Consultar.</li>
+      <li><b>Na bancada:</b> Confrontar (corrente contra o datasheet e calibração do LDR nas três condições) e Construir (ciclo do semáforo e modo noturno com histerese).</li>
+      <li><b>Depois da montagem:</b> Comprovar (cronômetro, cartão de falha e vídeos) e o ADR.</li>
+      <li><b>Entrega no seu repositório pessoal do GitLab:</b> código do semáforo, <span class="mono">RELATORIO.md</span> com os itens acima, <span class="mono">grafico-calibracao.png</span>, link para o vídeo de 30 a 60 segundos com um ciclo completo e você aparecendo na gravação, vídeo da transição no limiar, resposta do cartão de falha e o <span class="mono">ADR.md</span>.</li>
     </ol>
 
     <form id="labForm" novalidate>
       <fieldset class="step">
         <legend>Identificação</legend>
         <div class="fields two">
-          <label>Grupo<input name="grupo" required></label>
+          <label>Nome<input name="autor" required autocomplete="name"></label>
+          <label>E-mail institucional<input name="email" type="email" required autocomplete="email"></label>
           <label>Turma<input name="turma" required></label>
-          <label class="full">Integrantes<textarea name="integrantes" required rows="2" placeholder="um nome por linha"></textarea></label>
-          <label>Autor deste ADR individual<input name="autor" required autocomplete="name"></label>
-          <label>E-mail institucional do autor<input name="email" type="email" required autocomplete="email"></label>
+          <label>Grupo de bancada <span class="opt-tag">opcional</span><input name="grupo"></label>
+          <label class="full">Colegas de bancada <span class="opt-tag">opcional</span><textarea name="integrantes" rows="2" placeholder="um nome por linha"></textarea></label>
         </div>
       </fieldset>
 
       <!-- 1 -->
       <fieldset class="step" id="stepCtx">
         <legend><span class="n">1</span> Contextualizar <span class="when">antes de medir</span></legend>
-        <p class="step-desc">Objetivo: declarar o critério de aceitação e o limiar previsto <b>antes</b> de programar e de medir o LDR.</p>
+        <h4 class="sub-step">Semáforo básico</h4>
+        <p class="step-desc">Objetivo: preencher a <b>tabela de previsão</b> antes de montar: os três tempos do seu plano, a corrente esperada em cada LED com o resistor escolhido, a tensão de alimentação considerada e o critério de aceitação da temporização.</p>
+        <div class="fields two">
+          <label>Último dígito do RA<input name="cons_ra" type="number" min="0" max="9" step="1" required></label>
+          <div class="out" id="outPlanoRel"></div>
+          <label>Tensão de alimentação considerada (V)<input name="ctx_vcc" type="number" min="0" step="any" required></label>
+          <label>Resistor escolhido para cada LED (Ω)<input name="ctx_r" type="number" min="1" step="any" required></label>
+          <label>Corrente esperada no LED vermelho (mA)<input name="ctx_i_verm" type="number" min="0" step="any" required></label>
+          <label>Corrente esperada no LED amarelo (mA)<input name="ctx_i_amar" type="number" min="0" step="any" required></label>
+          <label>Corrente esperada no LED verde (mA)<input name="ctx_i_verde" type="number" min="0" step="any" required></label>
+          <label>Desvio aceitável na temporização (%)<input name="ctx_desvio" type="number" min="0" step="any" required></label>
+        </div>
+        <label class="full">Por que esse desvio é aceitável?<textarea name="ctx_desvio_just" required rows="2"></textarea></label>
+        <h4 class="sub-step">Modo noturno</h4>
+        <p class="step-desc">Objetivo: declarar o critério de aceitação e o limiar previsto <b>antes</b> de programar e de medir o LDR. Uma transição indevida ocorre quando o semáforo muda de modo sem que tenha ocorrido uma mudança significativa na iluminação.</p>
         <ol class="todo">
-          <li>Declare quantas <b>transições espúrias</b> entre modo diurno e noturno por minuto o grupo considera toleráveis, e por que esse número.</li>
-          <li>Declare o que o grupo pretende delegar à IA nesta atividade.</li>
+          <li>Declare quantas <b>transições indevidas</b> entre modo diurno e noturno por minuto você considera toleráveis, e por que esse número.</li>
+          <li>Declare o que você pretende delegar à IA nesta atividade.</li>
           <li>Escreva o <b>limiar previsto</b> para o modo noturno, na escala de 0 a 4095, e de onde veio a previsão.</li>
-          <li>Clique em <b>Registrar previsão</b> antes de ligar o sensor. O horário fica gravado no relatório; alteração posterior também fica registrada.</li>
+          <li>Clique em <b>Registrar previsão</b> antes de montar e de ligar o sensor. O horário fica gravado no relatório; alteração posterior também fica registrada.</li>
         </ol>
         <div class="fields two">
-          <label>Transições espúrias toleráveis por minuto<input name="ctx_transicoes" type="number" min="0" step="any" required></label>
+          <label>Transições indevidas toleráveis por minuto<input name="ctx_transicoes" type="number" min="0" step="any" required></label>
           <label>Limiar previsto (0 a 4095)<input name="ctx_limiar" type="number" min="0" max="4095" step="1" required><small class="field-help">Leitura do conversor a partir da qual você espera que o modo noturno entre.</small></label>
         </div>
         <label class="full">Por que esse número de transições?<textarea name="ctx_transicoes_just" required rows="2"></textarea></label>
         <label class="full">De onde veio o limiar previsto?<textarea name="ctx_limiar_just" required rows="2"></textarea></label>
-        <label class="full">O que o grupo delega à IA nesta atividade<textarea name="ctx_delega" required rows="2"></textarea></label>
+        <label class="full">O que você delega à IA nesta atividade<textarea name="ctx_delega" required rows="2"></textarea></label>
         <div class="lock-row">
           <button type="button" class="btn orange" id="btnLock">Registrar previsão</button>
           <span class="lock-status" id="lockStatus">Previsão ainda não registrado(a).</span>
@@ -220,6 +277,19 @@ void loop() {
       <!-- 2 -->
       <fieldset class="step">
         <legend><span class="n">2</span> Consultar</legend>
+        <div class="fields">
+          <label>Ferramenta de IA usada
+            <select name="con_ferramenta" required>
+              <option value="">Selecione…</option><option>Gemini</option><option>ChatGPT</option><option>Claude</option><option>Copilot</option><option>Outra</option>
+            </select></label>
+        </div>
+        <h4 class="sub-step">Semáforo básico</h4>
+        <p class="step-desc">Objetivo: fazer à IA uma pergunta <b>delimitada</b> sobre um ponto do circuito ou do código que você não domina. Não peça o código completo do semáforo.</p>
+        <div class="fields">
+          <label>Pergunta sobre o circuito ou o código, exatamente como você fez<textarea name="con_circ_pergunta" required rows="2"></textarea></label>
+          <label>Resposta da IA, resumida<textarea name="con_circ_resposta" required rows="2"></textarea></label>
+        </div>
+        <h4 class="sub-step">Modo noturno</h4>
         <p class="step-desc">Objetivo: obter da IA uma <b>estratégia</b> para evitar oscilação em torno de um limiar, sem pedir o código pronto.</p>
         <ol class="todo">
           <li>Pergunte à IA como evitar que um sistema fique alternando de estado quando a leitura está perto de um limiar. Não peça o código.</li>
@@ -227,10 +297,6 @@ void loop() {
           <li>Se a IA sugeriu um valor de limiar, anote o valor: ele será confrontado com as suas medições.</li>
         </ol>
         <div class="fields">
-          <label>Ferramenta de IA usada
-            <select name="con_ferramenta" required>
-              <option value="">Selecione…</option><option>Gemini</option><option>ChatGPT</option><option>Claude</option><option>Copilot</option><option>Outra</option>
-            </select></label>
           <label>Pergunta, exatamente como você fez<textarea name="con_pergunta" required rows="2"></textarea></label>
           <label>Estratégia sugerida pela IA<textarea name="con_estrategia" required rows="2"></textarea></label>
         </div>
@@ -243,6 +309,17 @@ void loop() {
       <!-- 3 -->
       <fieldset class="step">
         <legend><span class="n">3</span> Confrontar <span class="when">na bancada</span></legend>
+        <h4 class="sub-step">Semáforo básico</h4>
+        <p class="step-desc">Objetivo: verificar a corrente calculada contra o datasheet do LED que você está usando e dizer se o resistor escolhido mantém a corrente dentro do limite. Se a IA sugeriu um valor de resistor, compare com o que o datasheet indica e registre qual dos dois você adotou e por quê.</p>
+        <div class="fields two">
+          <label>LED usado (modelo ou link do datasheet)<input name="conf_led" required></label>
+          <label>Corrente máxima contínua no datasheet (mA)<input name="conf_imax" type="number" min="0" step="any" required></label>
+          <label>Resistor sugerido pela IA (Ω) <span class="opt-tag">opcional, se ela sugeriu</span><input name="conf_r_ia" type="number" min="0" step="any"></label>
+          <label>Resistor adotado (Ω)<input name="conf_r_adotado" type="number" min="0" step="any" required></label>
+        </div>
+        <div class="check-line" id="ledCheck" aria-live="polite"></div>
+        <label class="full">Qual resistor você adotou e por quê<textarea name="conf_r_just" required rows="2"></textarea></label>
+        <h4 class="sub-step">Modo noturno</h4>
         <p class="step-desc">Objetivo: medir a leitura bruta do LDR nas três condições e confrontar com o limiar previsto e com o sugerido pela IA.</p>
         <ol class="todo">
           <li>Monte o divisor de tensão e carregue o <a href="#codigo">código de calibração</a>.</li>
@@ -274,24 +351,29 @@ lanterna,3864
           <canvas id="chartCal" height="450" role="img" aria-label="Leituras brutas do LDR em cada condição, com os limiares previsto, sugerido pela IA, de entrada e de saída"></canvas>
         </div>
         <div class="check-line" id="cmpCheck" aria-live="polite"></div>
-        <label class="full">Divergência entre o limiar previsto, o sugerido pela IA e as medições: de quanto foi e por quê<textarea name="conf_divergencia" required rows="3"></textarea></label>
+        <label class="full">Divergência entre o limiar previsto, o sugerido pela IA e as medições: de quanto foi e por que um valor sugerido sem acesso ao seu sensor e ao seu ambiente dificilmente coincide com o medido<textarea name="conf_divergencia" required rows="3"></textarea></label>
       </fieldset>
 
       <!-- 4 -->
       <fieldset class="step">
         <legend><span class="n">4</span> Construir</legend>
+        <h4 class="sub-step">Semáforo básico</h4>
+        <p class="step-desc">Objetivo: montar o semáforo na protoboard com os três LEDs e programar o ciclo com os tempos do seu plano, repetindo continuamente.</p>
+        <div class="fields two">
+          <label>Pinos usados (vermelho, amarelo, verde)<input name="cons_pinos" required placeholder="ex.: GPIO 25, 26, 27"></label>
+          <label>Link do código no GitLab<input name="cons_codigo" type="url" required placeholder="https://"></label>
+        </div>
+        <h4 class="sub-step">Modo noturno</h4>
         <p class="step-desc">Objetivo: implementar o modo noturno com histerese, com limiares <b>derivados das suas medições</b>.</p>
         <ol class="todo">
           <li>Escolha o <b>limiar de entrada</b> (a luz cai além dele e o modo noturno entra) e o <b>limiar de saída</b> (a luz volta além dele e o modo noturno sai), entre as faixas de sombra e de ambiente.</li>
           <li>Deixe entre os dois uma folga maior que o ruído medido numa mesma condição.</li>
           <li>Justifique a escolha a partir da tabela de calibração. O simulador do início da página passa a usar os seus valores.</li>
-          <li>Implemente o modo noturno no código do semáforo, mantendo as fases do plano do seu RA no modo diurno.</li>
+          <li>Implemente o modo noturno (amarelo intermitente) no código do semáforo, mantendo as fases do plano do seu RA no modo diurno.</li>
         </ol>
         <div class="fields two">
           <label>Limiar de entrada no modo noturno<input name="cons_entrada" type="number" min="0" max="4095" step="1" required></label>
           <label>Limiar de saída do modo noturno<input name="cons_saida" type="number" min="0" max="4095" step="1" required></label>
-          <label>Último dígito do RA usado no plano<input name="cons_ra" type="number" min="0" max="9" step="1"></label>
-          <div class="out" id="outPlanoRel"></div>
         </div>
         <div class="check-line" id="limCheck" aria-live="polite"></div>
         <label class="full">Como os limiares saíram das medições<textarea name="cons_justificativa" required rows="3"></textarea></label>
@@ -300,14 +382,36 @@ lanterna,3864
       <!-- 5 -->
       <fieldset class="step">
         <legend><span class="n">5</span> Comprovar</legend>
+        <h4 class="sub-step">Semáforo básico</h4>
+        <p class="step-desc">Objetivo: medir o ciclo real com um cronômetro externo, preencher a coluna de medição da tabela de previsão e explicar qualquer divergência acima do seu critério de aceitação.</p>
+        <div class="fields two">
+          <label>Vermelho medido (s)<input name="comp_t_verm" type="number" min="0" step="any" required></label>
+          <label>Verde medido (s)<input name="comp_t_verde" type="number" min="0" step="any" required></label>
+          <label>Amarelo medido (s)<input name="comp_t_amar" type="number" min="0" step="any" required></label>
+          <label>Ciclo completo medido (s)<input name="comp_t_ciclo" type="number" min="0" step="any" required></label>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table mono" id="tempoTable">
+            <thead><tr><th>Fase</th><th>Previsto (s)</th><th>Medido (s)</th><th>Desvio</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="check-line" id="tempoCheck" aria-live="polite"></div>
+        <label class="full">Explicação das divergências acima do critério<textarea name="comp_t_just" rows="2"></textarea></label>
+        <label class="full">Link do vídeo de 30 a 60 s com um ciclo completo, com você aparecendo na gravação<input name="comp_video_ciclo" type="url" required placeholder="https://"></label>
+        <p class="step-desc">Ao final da montagem, o professor entrega a você um <b>cartão de falha</b>, sorteado pelo último dígito do RA, descrevendo um sintoma observado em outro semáforo.</p>
+        <label class="full">Sintoma descrito no cartão de falha<textarea name="comp_cartao" required rows="2"></textarea></label>
+        <label class="full">Causa mais provável do sintoma<textarea name="comp_causa" required rows="2"></textarea></label>
+        <label class="full">Teste que você faria para confirmar essa causa<textarea name="comp_teste" required rows="2"></textarea></label>
+        <h4 class="sub-step">Modo noturno</h4>
         <p class="step-desc">Objetivo: mostrar em vídeo que o semáforo troca de modo uma vez e permanece estável quando a luz passa devagar pelo limiar.</p>
         <ol class="todo">
-          <li>Grave um vídeo movendo a fonte de luz <b>devagar</b> em torno do limiar, de propósito.</li>
+          <li>Grave um vídeo provocando a transição de propósito, movendo a fonte de luz <b>devagar</b> em torno do limiar.</li>
           <li>Conte as trocas de modo que aparecem no vídeo e compare com o critério declarado no Contextualizar.</li>
-          <li>Explique em uma frase por que a histerese impede a oscilação.</li>
+          <li>Comente dentro do vídeo, explicando em uma frase por que a histerese impede a oscilação.</li>
         </ol>
         <div class="fields two">
-          <label>Link do vídeo<input name="comp_video" type="url" required placeholder="https://"></label>
+          <label>Link do vídeo da transição<input name="comp_video" type="url" required placeholder="https://"></label>
           <label>Trocas de modo observadas no vídeo<input name="comp_trocas" type="number" min="0" step="1" required></label>
         </div>
         <label class="full">Por que a histerese impede a oscilação (uma frase)<textarea name="comp_frase" required rows="2"></textarea></label>
@@ -315,7 +419,7 @@ lanterna,3864
 
       <!-- ADR -->
       <fieldset class="step">
-        <legend><span class="n">6</span> ADR individual</legend>
+        <legend><span class="n">6</span> ADR</legend>
         <p class="step-desc">Objetivo: registrar uma decisão técnica sua, com a alternativa considerada, e uma sugestão da IA que você rejeitou ou corrigiu, com a razão técnica. Dizer que aceitou tudo sem ressalva não pontua.</p>
         <label class="full">Decisão tomada<textarea name="adr_decisao" required rows="2"></textarea></label>
         <label class="full">Alternativa considerada e por que ficou de fora<textarea name="adr_alternativa" required rows="2"></textarea></label>
