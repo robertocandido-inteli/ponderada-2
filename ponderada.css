@@ -417,3 +417,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--p
 #outPlanoRel:empty { display: none; }
 /* A primeira coluna da tabela de dados comum é o número da linha; aqui é o nome da condição. */
 #statTable td:first-child, #statTable th:first-child { text-align: left; width: auto; color: var(--text); }
+/* Subtítulos dentro de cada etapa: semáforo básico e modo noturno. */
+.step .sub-step { font-size: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--primaria); margin: 18px 0 4px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.step legend + .sub-step, .step legend + .fields + .sub-step { border-top: 0; padding-top: 0; margin-top: 6px; }
+#tempoTable td:first-child, #tempoTable th:first-child { text-align: left; width: auto; color: var(--text); }
