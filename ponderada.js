@@ -416,6 +416,55 @@
   const atualizarPlanoCalc = () => { document.getElementById('outPlano').innerHTML = 'Plano do RA' + textoPlano(plano(num(raCalc.value))); };
   raCalc.addEventListener('input', atualizarPlanoCalc);
 
+  /* ---------------- Semáforo básico: corrente nos LEDs ---------------- */
+  const LEDS = [['vermelho', 'ledVfR', 'ctx_i_verm'], ['amarelo', 'ledVfA', 'ctx_i_amar'], ['verde', 'ledVfG', 'ctx_i_verde']];
+  // Corrente em mA para tensão em V e resistor em ohm.
+  const corrente = (v, vf, r) => (Number.isFinite(v) && Number.isFinite(vf) && r > 0 && v > vf ? ((v - vf) / r) * 1000 : NaN);
+  function atualizarLed() {
+    const v = num(document.getElementById('ledV').value), r = num(document.getElementById('ledR').value);
+    document.getElementById('outLed').innerHTML = 'Corrente em cada LED' + LEDS.map(([cor, id]) =>
+      `<span>${cor}: <b style="display:inline;font-size:inherit">${fmtSig(corrente(v, num(document.getElementById(id).value), r))} mA</b></span>`).join('<br>');
+  }
+  ['ledV', 'ledR', 'ledVfR', 'ledVfA', 'ledVfG'].forEach(id => document.getElementById(id).addEventListener('input', atualizarLed));
+
+  function checksLed() {
+    const out = [], imax = num(F.conf_imax.value);
+    if (!Number.isFinite(imax)) return out;
+    LEDS.forEach(([cor, , campo]) => {
+      const i = num(F[campo].value);
+      if (!Number.isFinite(i)) return;
+      out.push(i <= imax ? { ok: true, texto: `LED ${cor}: ${fmtSig(i)} mA previstos, dentro do limite de ${fmtSig(imax)} mA do datasheet.` }
+        : { ok: false, texto: `LED ${cor}: ${fmtSig(i)} mA previstos, acima do limite de ${fmtSig(imax)} mA do datasheet. Aumente o resistor.` });
+    });
+    const rPrev = num(F.ctx_r.value), rAdot = num(F.conf_r_adotado.value), rIa = num(F.conf_r_ia.value);
+    if (Number.isFinite(rPrev) && Number.isFinite(rAdot) && rPrev !== rAdot)
+      out.push({ ok: true, texto: `Resistor adotado (${fmtSig(rAdot)} Ω) diferente do previsto no Contextualizar (${fmtSig(rPrev)} Ω): recalcule a corrente com o valor adotado.` });
+    if (Number.isFinite(rIa)) out.push({ ok: true, texto: `Resistor sugerido pela IA: ${fmtSig(rIa)} Ω. Adotado: ${Number.isFinite(rAdot) ? fmtSig(rAdot) + ' Ω' : 'n/d'}. Justifique a escolha.` });
+    return out;
+  }
+
+  // Temporização: previsto pelo plano do RA contra o medido com cronômetro externo.
+  function tempos() {
+    const p = plano(num(F.cons_ra.value));
+    const fases = [['vermelho', 'comp_t_verm'], ['verde', 'comp_t_verde'], ['amarelo', 'comp_t_amar'], ['ciclo', 'comp_t_ciclo']];
+    return fases.map(([fase, campo]) => {
+      const prev = p ? p[fase] : NaN, med = num(F[campo].value);
+      const desvio = Number.isFinite(prev) && Number.isFinite(med) && prev > 0 ? ((med - prev) / prev) * 100 : NaN;
+      return { fase, prev, med, desvio };
+    });
+  }
+  const fmtDesvio = d => (Number.isFinite(d) ? `${d > 0 ? '+' : ''}${fmt(d, 1)} %` : 'n/d');
+  function checksTempo(T) {
+    const out = [], crit = num(F.ctx_desvio.value);
+    if (!Number.isFinite(crit)) return out;
+    T.forEach(t => {
+      if (!Number.isFinite(t.desvio)) return;
+      out.push(Math.abs(t.desvio) <= crit ? { ok: true, texto: `${t.fase}: desvio de ${fmtDesvio(t.desvio)}, dentro do critério de ${fmt(crit, 1)} %.` }
+        : { ok: false, texto: `${t.fase}: desvio de ${fmtDesvio(t.desvio)}, acima do critério de ${fmt(crit, 1)} %. Explique a divergência.` });
+    });
+    return out;
+  }
+
   /* ---------------- Esquema do divisor ---------------- */
   (function esquema() {
     const g = document.getElementById('esquema');
@@ -564,7 +613,7 @@
   }
   const cvCal = document.getElementById('chartCal');
   const desenharTela = () => { const { ctx, W, H } = P.prepararCanvas(cvCal); desenharCal(ctx, W, H); };
-  const pngCal = () => P.png((ctx, W, H) => desenharCal(ctx, W, H, `Calibração do LDR · grupo ${F.grupo.value || 'n/d'}`));
+  const pngCal = () => P.png((ctx, W, H) => desenharCal(ctx, W, H, `Calibração do LDR · ${F.autor.value || 'n/d'}`));
   ['btnPng', 'btnPng2'].forEach(id => document.getElementById(id).addEventListener('click', () => pngCal().then(b => P.baixar('grafico-calibracao.png', b))));
 
   /* ---------------- Tabela, verificações e atualização ---------------- */
@@ -577,6 +626,11 @@
     document.getElementById('dataCheck').innerHTML = html(checksDados(E));
     document.getElementById('cmpCheck').innerHTML = html(checksComparacao(E));
     document.getElementById('limCheck').innerHTML = html(checksLimiares(E));
+    document.getElementById('ledCheck').innerHTML = html(checksLed());
+    const T = tempos();
+    document.querySelector('#tempoTable tbody').innerHTML = T.map(t =>
+      `<tr><td>${t.fase}</td><td>${Number.isFinite(t.prev) ? fmt(t.prev, 0) : 'n/d'}</td><td>${Number.isFinite(t.med) ? fmt(t.med, 2) : 'n/d'}</td><td>${fmtDesvio(t.desvio)}</td></tr>`).join('');
+    document.getElementById('tempoCheck').innerHTML = html(checksTempo(T));
     const p = plano(num(F.cons_ra.value));
     document.getElementById('outPlanoRel').innerHTML = F.cons_ra.value === '' ? '' : 'Plano do RA' + textoPlano(p);
     desenharTela();
@@ -607,38 +661,79 @@
 
   function relatorio() {
     const E = todas(), sobe = sentido(E), R = regiao(E, sobe);
-    const p = plano(num(F.cons_ra.value));
+    const p = plano(num(F.cons_ra.value)), T = tempos();
     const linhasEst = CONDICOES.map(c => { const e = E[c]; return `| ${c} | ${e.n} | ${e.n ? fmt(e.min, 0) : 'n/d'} | ${e.n ? fmt(e.max, 0) : 'n/d'} | ${e.n ? fmt(e.media, 1) : 'n/d'} | ${e.n ? fmt(e.desvio, 1) : 'n/d'} |`; }).join('\n');
     const brutos = state.leituras.map(x => `${x.cond},${x.v}`).join('\n');
     const ordem = state.primeiraLeituraEm && trava.registrado() && trava.estado().primeiroEm <= state.primeiraLeituraEm
       ? 'previsão registrada antes da primeira leitura' : state.primeiraLeituraEm ? '**leituras importadas antes do registro da previsão**' : 'sem leituras importadas';
     return `# Relatório · Atividade ponderada de Computação 2 - Semáforo com dois modos de operação
 
-**Grupo:** ${L(F.grupo.value)} · **Turma:** ${L(F.turma.value)}
-**Integrantes:** ${L(F.integrantes.value.split(/\n+/).filter(Boolean).join(', '))}
+**Nome:** ${L(F.autor.value)} (${L(F.email.value)}) · **Turma:** ${L(F.turma.value)}
+**Grupo de bancada:** ${L(F.grupo.value)} · **Colegas de bancada:** ${L(F.integrantes.value.split(/\n+/).filter(Boolean).join(', '))}
 **Previsão registrada em:** ${trava.historico()}
 **Primeira leitura importada em:** ${state.primeiraLeituraEm ? P.quando(state.primeiraLeituraEm) : 'n/d'} · ${ordem}
 
 ## 1. Contextualizar
 
+### Semáforo básico: tabela de previsão
+
+| Item | Previsto |
+|---|---|
+| Último dígito do RA | ${L(F.cons_ra.value)} |
+| Tempo de vermelho | ${p ? p.vermelho + ' s' : 'n/d'} |
+| Tempo de verde | ${p ? p.verde + ' s' : 'n/d'} |
+| Tempo de amarelo | ${p ? p.amarelo + ' s' : 'n/d'} |
+| Ciclo completo | ${p ? p.ciclo + ' s' : 'n/d'} |
+| Tensão de alimentação considerada | ${L(F.ctx_vcc.value)} V |
+| Resistor de cada LED | ${L(F.ctx_r.value)} Ω |
+| Corrente esperada no LED vermelho | ${L(F.ctx_i_verm.value)} mA |
+| Corrente esperada no LED amarelo | ${L(F.ctx_i_amar.value)} mA |
+| Corrente esperada no LED verde | ${L(F.ctx_i_verde.value)} mA |
+| Desvio aceitável na temporização | ${L(F.ctx_desvio.value)} % |
+
+- **Por que esse desvio é aceitável:** ${L(F.ctx_desvio_just.value)}
+
+### Modo noturno
+
 | Item | Valor |
 |---|---|
-| Transições espúrias toleráveis por minuto | ${L(F.ctx_transicoes.value)} |
+| Transições indevidas toleráveis por minuto | ${L(F.ctx_transicoes.value)} |
 | Limiar previsto (0 a 4095) | ${L(F.ctx_limiar.value)} |
 
 - **Por que esse número de transições:** ${L(F.ctx_transicoes_just.value)}
 - **Origem do limiar previsto:** ${L(F.ctx_limiar_just.value)}
-- **O que o grupo delega à IA:** ${L(F.ctx_delega.value)}
+- **O que delego à IA:** ${L(F.ctx_delega.value)}
 
 ## 2. Consultar
 
 - **Ferramenta:** ${L(F.con_ferramenta.value)}
+
+### Semáforo básico
+
+- **Pergunta sobre o circuito ou o código:** ${L(F.con_circ_pergunta.value)}
+- **Resposta da IA:** ${L(F.con_circ_resposta.value)}
+
+### Modo noturno
+
 - **Pergunta:** ${L(F.con_pergunta.value)}
 - **Estratégia sugerida:** ${L(F.con_estrategia.value)}
 - **Nome da técnica:** ${L(F.con_tecnica.value)}
 - **Limiar sugerido pela IA:** ${L(F.con_limiar_ia.value)}
 
-## 3. Confrontar: tabela de calibração
+## 3. Confrontar
+
+### Semáforo básico: corrente contra o datasheet
+
+- **LED usado:** ${L(F.conf_led.value)}
+- **Corrente máxima no datasheet:** ${L(F.conf_imax.value)} mA
+- **Resistor sugerido pela IA:** ${F.conf_r_ia.value ? L(F.conf_r_ia.value) + ' Ω' : 'n/d'}
+- **Resistor adotado:** ${L(F.conf_r_adotado.value)} Ω
+- **Por quê:** ${L(F.conf_r_just.value)}
+
+Verificações:
+${md(checksLed())}
+
+### Modo noturno: tabela de calibração
 
 Leitura bruta do conversor de 12 bits (0 a 4095).
 
@@ -667,12 +762,19 @@ ${brutos}
 
 ## 4. Construir
 
+### Semáforo básico
+
+- **Pinos (vermelho, amarelo, verde):** ${L(F.cons_pinos.value)}
+- **Código:** ${L(F.cons_codigo.value)}
+- **Ciclo programado:** ${p ? `vermelho ${p.vermelho} s, verde ${p.verde} s, amarelo ${p.amarelo} s, repetindo` : 'n/d'}
+
+### Modo noturno (amarelo intermitente, com histerese)
+
 | Item | Valor |
 |---|---|
 | Limiar de entrada no modo noturno | ${L(F.cons_entrada.value)} |
 | Limiar de saída do modo noturno | ${L(F.cons_saida.value)} |
 | Folga entre os limiares | ${Number.isFinite(num(F.cons_entrada.value)) && Number.isFinite(num(F.cons_saida.value)) ? fmt(Math.abs(num(F.cons_entrada.value) - num(F.cons_saida.value)), 0) + ' contagens' : 'n/d'} |
-| Plano do RA (vermelho, verde, amarelo) | ${p ? `${p.vermelho} s, ${p.verde} s, ${p.amarelo} s (dígito ${num(F.cons_ra.value)})` : 'n/d'} |
 
 Verificações:
 ${md(checksLimiares(E))}
@@ -681,26 +783,48 @@ ${md(checksLimiares(E))}
 
 ## 5. Comprovar
 
-- **Vídeo:** ${L(F.comp_video.value)}
+### Semáforo básico: tabela de previsão com a medição
+
+| Fase | Previsto (s) | Medido com cronômetro (s) | Desvio |
+|---|---|---|---|
+${T.map(t => `| ${t.fase} | ${Number.isFinite(t.prev) ? fmt(t.prev, 0) : 'n/d'} | ${Number.isFinite(t.med) ? fmt(t.med, 2) : 'n/d'} | ${fmtDesvio(t.desvio)} |`).join('\n')}
+
+Critério de aceitação: ${L(F.ctx_desvio.value)} %.
+
+Verificações:
+${md(checksTempo(T))}
+
+- **Explicação das divergências:** ${L(F.comp_t_just.value)}
+- **Vídeo do ciclo completo (30 a 60 s):** ${L(F.comp_video_ciclo.value)}
+
+#### Cartão de falha
+
+- **Sintoma:** ${L(F.comp_cartao.value)}
+- **Causa mais provável:** ${L(F.comp_causa.value)}
+- **Teste para confirmar:** ${L(F.comp_teste.value)}
+
+### Modo noturno
+
+- **Vídeo da transição:** ${L(F.comp_video.value)}
 - **Trocas de modo observadas:** ${L(F.comp_trocas.value)} (critério declarado: ${L(F.ctx_transicoes.value)} por minuto)
 - **Por que a histerese impede a oscilação:** ${L(F.comp_frase.value)}
 
-ADR individual em \`ADR.md\`, autor: ${L(F.autor.value)}.
+ADR em \`ADR.md\`.
 `;
   }
 
   function adr() {
     const E = todas();
     const media = c => (E[c].n ? fmt(E[c].media, 0) : 'n/d');
-    return `# ADR individual · Atividade ponderada de Computação 2 - Semáforo com dois modos de operação
+    return `# ADR · Atividade ponderada de Computação 2 - Semáforo com dois modos de operação
 
 **Data:** ${new Date().toLocaleDateString('pt-BR')}
 **Autor:** ${L(F.autor.value)} (${L(F.email.value)})
-**Grupo:** ${L(F.grupo.value)}
+**Turma:** ${L(F.turma.value)}
 
 ## Contexto
 
-Modo noturno automático do semáforo, detectado por LDR. Calibração do grupo: média de ${media('ambiente')} no ambiente, ${media('sombra')} na sombra e ${media('lanterna')} com lanterna. Limiares adotados: entrada ${L(F.cons_entrada.value)} e saída ${L(F.cons_saida.value)}.
+Semáforo de três LEDs com o plano do RA (dígito ${L(F.cons_ra.value)}) e modo noturno automático, detectado por LDR. Calibração: média de ${media('ambiente')} no ambiente, ${media('sombra')} na sombra e ${media('lanterna')} com lanterna. Limiares adotados: entrada ${L(F.cons_entrada.value)} e saída ${L(F.cons_saida.value)}.
 
 ## Decisão
 
@@ -747,7 +871,7 @@ ${L(F.adr_razao.value)}
     trava.carregar(extra.trava);
     if (state.prev) liberarSim();
   } else trava.carregar(null);
-  atualizarRuido(); atualizarPlanoCalc(); atualizar();
+  atualizarRuido(); atualizarPlanoCalc(); atualizarLed(); atualizar();
   if (state.prev) { simRes = simular(Object.assign({ semente: state.semente, ruido: +simRuido.value }, parametrosSim())); simProgresso = 1; desenharSim(); }
   window.addEventListener('resize', () => { desenharTela(); desenharSim(); });
   if (document.fonts) document.fonts.ready.then(() => { desenharTela(); desenharSim(); });
